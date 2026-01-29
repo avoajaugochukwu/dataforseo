@@ -39,6 +39,11 @@ export default function SettingsPage() {
     toast('Deleted', 'info');
   }
 
+  const ctx = editConfig.websiteContext || { description: '', targetAudience: '', tone: '', additionalInstructions: '' };
+  function updateCtx(field: string, value: string) {
+    setEditConfig({ ...editConfig, websiteContext: { ...ctx, [field]: value } });
+  }
+
   return (
     <div className="max-w-2xl space-y-8">
       <h2 className="text-2xl font-bold">Settings</h2>
@@ -72,6 +77,46 @@ export default function SettingsPage() {
             <Input label="Collection Slug" value={editConfig.collectionSlug || ''} onChange={(e) => setEditConfig({ ...editConfig, collectionSlug: e.target.value })} />
             <Input label="Extra Field Mapping (JSON) — title, slug, content, excerpt, author, status, publishDate are automatic" value={JSON.stringify(editConfig.fieldMapping || {})} onChange={(e) => { try { setEditConfig({ ...editConfig, fieldMapping: JSON.parse(e.target.value) }); } catch {} }} />
             <Input label="Default Values (JSON) — e.g. {&quot;author&quot;: 1}" value={JSON.stringify(editConfig.defaultValues || {})} onChange={(e) => { try { setEditConfig({ ...editConfig, defaultValues: JSON.parse(e.target.value) }); } catch {} }} />
+
+            <div className="border-t border-zinc-200 dark:border-zinc-700 pt-3 mt-3">
+              <h4 className="text-sm font-semibold mb-2">Website Context</h4>
+              <p className="text-xs text-zinc-500 mb-3">Describe your website so AI-generated topics and content match this blog&apos;s brand.</p>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Website Description</label>
+                  <textarea
+                    className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm"
+                    rows={3}
+                    placeholder="What is your website about?"
+                    value={ctx.description}
+                    onChange={(e) => updateCtx('description', e.target.value)}
+                  />
+                </div>
+                <Input
+                  label="Target Audience"
+                  placeholder="e.g. small business owners, developers, marketers"
+                  value={ctx.targetAudience}
+                  onChange={(e) => updateCtx('targetAudience', e.target.value)}
+                />
+                <Input
+                  label="Tone / Voice"
+                  placeholder="e.g. professional but friendly, casual and witty"
+                  value={ctx.tone}
+                  onChange={(e) => updateCtx('tone', e.target.value)}
+                />
+                <div>
+                  <label className="block text-sm font-medium mb-1">Additional Instructions</label>
+                  <textarea
+                    className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm"
+                    rows={3}
+                    placeholder="Any extra guidelines for the AI when generating content"
+                    value={ctx.additionalInstructions}
+                    onChange={(e) => updateCtx('additionalInstructions', e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="flex gap-2">
               <Button onClick={saveConfig}>Save</Button>
               <Button variant="secondary" onClick={() => { setShowForm(false); setEditConfig({}); }}>Cancel</Button>

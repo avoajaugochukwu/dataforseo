@@ -1,4 +1,21 @@
 import Anthropic from '@anthropic-ai/sdk';
+import type { WebsiteContext } from './types';
+
+function buildContextBlock(ctx?: WebsiteContext): string {
+  if (!ctx) return '';
+  const parts: string[] = [];
+  if (ctx.description) parts.push(`Website description: ${ctx.description}`);
+  if (ctx.targetAudience) parts.push(`Target audience: ${ctx.targetAudience}`);
+  if (ctx.tone) parts.push(`Tone/voice: ${ctx.tone}`);
+  if (ctx.additionalInstructions) parts.push(`Additional instructions: ${ctx.additionalInstructions}`);
+  if (parts.length === 0) return '';
+  return `\n\nWebsite context (use this to guide your output):\n${parts.join('\n')}\n`;
+}
+
+function getCurrentDate(): string {
+  const now = new Date();
+  return now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+}
 
 function getClient(): Anthropic {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -6,7 +23,7 @@ function getClient(): Anthropic {
   return new Anthropic({ apiKey });
 }
 
-export async function generateTopics(keywords: string[]): Promise<{
+export async function generateTopics(keywords: string[], websiteContext?: WebsiteContext): Promise<{
   title: string;
   slug: string;
   outline: string[];
@@ -14,6 +31,7 @@ export async function generateTopics(keywords: string[]): Promise<{
   keywordGroup: string[];
 }[]> {
   const client = getClient();
+  const contextBlock = buildContextBlock(websiteContext);
 
   const msg = await client.messages.create({
     model: 'claude-sonnet-4-20250514',
@@ -21,7 +39,9 @@ export async function generateTopics(keywords: string[]): Promise<{
     messages: [
       {
         role: 'user',
-        content: `You are an SEO content strategist. Given these keywords, group them into blog post topics. For each topic provide:
+        content: `Today's date is ${getCurrentDate()}.${contextBlock}
+
+You are an SEO content strategist. Given these keywords, group them into blog post topics. For each topic provide:
 - title: compelling blog post title
 - slug: URL-friendly slug
 - outline: array of H2 section headings
@@ -42,13 +62,14 @@ Respond with a JSON array only, no other text. Example:
   return JSON.parse(jsonMatch[0]);
 }
 
-export async function generateContent(title: string, outline: string[], contentPrompt: string): Promise<{
+export async function generateContent(title: string, outline: string[], contentPrompt: string, websiteContext?: WebsiteContext): Promise<{
   content: string;
   metaTitle: string;
   metaDescription: string;
   excerpt: string;
 }> {
   const client = getClient();
+  const contextBlock = buildContextBlock(websiteContext);
 
   const msg = await client.messages.create({
     model: 'claude-sonnet-4-20250514',
@@ -56,7 +77,9 @@ export async function generateContent(title: string, outline: string[], contentP
     messages: [
       {
         role: 'user',
-        content: `Write a comprehensive, SEO-optimized blog post in Markdown.
+        content: `Today's date is ${getCurrentDate()}. All references to dates, years, and timeframes must reflect this.${contextBlock}
+
+Write a comprehensive, SEO-optimized blog post in Markdown.
 
 Title: ${title}
 Outline sections: ${outline.join(', ')}
@@ -64,6 +87,15 @@ Outline sections: ${outline.join(', ')}
 Additional instructions: ${contentPrompt}
 
 Write the full blog post in Markdown format. Start with the title as an H1, then follow the outline. Make it informative, well-structured, and engaging.
+
+Writing style guidelines:
+- Write like a knowledgeable person explaining things to a friend — conversational, clear, and direct.
+- Avoid flowery, corporate, or overly formal language. No words like "revolutionize", "game-changer", "delve", "landscape", "cutting-edge", "unleash", "seamlessly", "robust", or "leverage".
+- Use short sentences. Vary sentence length naturally.
+- Be specific and concrete rather than vague and abstract.
+- Skip filler intros like "In today's fast-paced world..." — get to the point.
+- Use contractions (it's, you'll, don't) where natural.
+- Prefer active voice over passive voice.
 
 In addition to the blog post content, also generate:
 - metaTitle: an SEO-optimized title (~60 characters, may differ from the blog post H1)

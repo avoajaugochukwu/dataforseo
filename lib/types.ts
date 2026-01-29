@@ -6,6 +6,7 @@ export interface BlogConfig {
   collectionSlug: string;
   fieldMapping: Record<string, string>; // local field -> payload field
   defaultValues: Record<string, unknown>;
+  websiteContext?: WebsiteContext;
 }
 
 export interface Keyword {
@@ -42,6 +43,13 @@ export interface DraftPost {
   publishedAt?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface WebsiteContext {
+  description: string;
+  targetAudience: string;
+  tone: string;
+  additionalInstructions: string;
 }
 
 export interface DbSchema {
