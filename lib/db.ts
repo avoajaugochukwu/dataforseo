@@ -11,6 +11,7 @@ const defaultData: DbSchema = {
   keywords: [],
   topics: [],
   drafts: [],
+  topicalMaps: [],
 };
 
 let dbInstance: Low<DbSchema> | null = null;

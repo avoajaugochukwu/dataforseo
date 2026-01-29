@@ -6,6 +6,7 @@ export async function DELETE() {
   db.data.keywords = [];
   db.data.topics = [];
   db.data.drafts = [];
+  db.data.topicalMaps = [];
   await db.write();
   return NextResponse.json({ ok: true });
 }

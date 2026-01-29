@@ -79,6 +79,28 @@ Example defaultValues: { "author": "1" }
 
 The app automatically converts the author value to a number before sending it to the Payload CMS API. If no valid author is set, publishing will fail.`,
   },
+  {
+    title: 'Ideal Blog Collection Schema',
+    content: `Below is the recommended schema for your Payload CMS blog collection. Setting up your collection with these fields ensures it aligns with what the app expects when publishing content.
+
+• title (text, required) — the blog post title
+• slug (text, auto-generated from title)
+• featuredImage (upload → media collection)
+• excerpt (textarea, required) — short summary for listings and SEO
+• content (richText, required) — the main body of the post
+• author (relationship → authors collection, required)
+• publishDate (date, required)
+• status (select: draft | published, default: draft)
+
+• relatedContent (group):
+  – games (relationship → games collection, multi-select)
+  – posts (relationship → blog-posts collection, multi-select)
+
+• SEO tab:
+  – metaTitle (text)
+  – metaDescription (textarea)
+  – metaImage (upload → media collection)`,
+  },
 ];
 
 export default function HelpPage() {

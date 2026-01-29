@@ -27,6 +27,10 @@ export interface Topic {
   keywordIds: string[];
   status: 'draft' | 'approved' | 'generated';
   createdAt: string;
+  topicalMapId?: string;
+  role?: 'pillar' | 'cluster';
+  pillarTopicId?: string;
+  relatedTopicIds?: string[];
 }
 
 export interface DraftPost {
@@ -52,9 +56,30 @@ export interface WebsiteContext {
   additionalInstructions: string;
 }
 
+export interface TopicalMap {
+  id: string;
+  pillarTitle: string;
+  pillarKeyword: string;
+  description: string;
+  clusterCount: number;
+  status: 'draft' | 'approved' | 'generating' | 'completed';
+  createdAt: string;
+}
+
+export interface BatchJob {
+  id: string;
+  topicIds: string[];
+  completed: number;
+  failed: number;
+  total: number;
+  status: 'running' | 'completed' | 'cancelled';
+  errors: { topicId: string; error: string }[];
+}
+
 export interface DbSchema {
   blogConfigs: BlogConfig[];
   keywords: Keyword[];
   topics: Topic[];
   drafts: DraftPost[];
+  topicalMaps: TopicalMap[];
 }

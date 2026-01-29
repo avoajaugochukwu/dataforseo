@@ -115,3 +115,50 @@ Respond with a JSON object containing these keys: "content", "metaTitle", "metaD
   }
   return JSON.parse(jsonMatch[0]);
 }
+
+export async function generateTopicalMapTopics(
+  pillarKeyword: string,
+  description: string,
+  clusterCount: number,
+  websiteContext?: WebsiteContext
+): Promise<{
+  pillar: { title: string; slug: string; outline: string[]; contentPrompt: string };
+  clusters: { title: string; slug: string; outline: string[]; contentPrompt: string }[];
+}> {
+  const client = getClient();
+  const contextBlock = buildContextBlock(websiteContext);
+
+  const msg = await client.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 8192,
+    messages: [
+      {
+        role: 'user',
+        content: `Today's date is ${getCurrentDate()}.${contextBlock}
+
+You are an SEO topical authority strategist. Create a topical map for the pillar keyword: "${pillarKeyword}"
+
+Description/context: ${description}
+
+Generate:
+1. ONE pillar topic — a comprehensive, authoritative article targeting the main keyword. It should have 8-12 H2 section headings.
+2. ${clusterCount} cluster topics — supporting articles that cover subtopics, long-tail variations, and related questions. Each cluster should have 4-6 H2 section headings.
+
+Each cluster's contentPrompt should reference the pillar topic for internal linking context (e.g., "Link back to the pillar article about [pillar title] where relevant").
+
+Respond with JSON only:
+{
+  "pillar": { "title": "...", "slug": "...", "outline": ["H2 1", "H2 2", ...], "contentPrompt": "..." },
+  "clusters": [
+    { "title": "...", "slug": "...", "outline": ["H2 1", ...], "contentPrompt": "..." }
+  ]
+}`,
+      },
+    ],
+  });
+
+  const text = msg.content[0].type === 'text' ? msg.content[0].text : '';
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('Failed to parse topical map from Claude response');
+  return JSON.parse(jsonMatch[0]);
+}

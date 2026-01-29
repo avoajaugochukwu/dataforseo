@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/toast';
+import { BatchProgress } from '@/components/batch-progress';
+import { TopicEditor } from '@/components/topic-editor';
 import type { BlogConfig, Topic, DraftPost } from '@/lib/types';
 
 const MDEditor = dynamic(() => import('@uiw/react-md-editor'), { ssr: false });
@@ -18,17 +20,40 @@ export default function ContentPage() {
   const [editing, setEditing] = useState<DraftPost | null>(null);
   const [blogConfigs, setBlogConfigs] = useState<BlogConfig[]>([]);
   const [selectedConfigId, setSelectedConfigId] = useState<string>('');
+  const [selectedTopicIds, setSelectedTopicIds] = useState<Set<string>>(new Set());
+  const [batchJobId, setBatchJobId] = useState<string | null>(null);
+  const [editingTopic, setEditingTopic] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadData = useCallback(() => {
     fetch('/api/topics').then((r) => r.json()).then(setTopics);
     fetch('/api/drafts').then((r) => r.json()).then(setDrafts);
+  }, []);
+
+  useEffect(() => {
+    loadData();
     fetch('/api/blog-configs').then((r) => r.json()).then((configs: BlogConfig[]) => {
       setBlogConfigs(configs);
       if (configs.length > 0) setSelectedConfigId(configs[0].id);
     });
-  }, []);
+  }, [loadData]);
 
   const approvedTopics = topics.filter((t) => t.status === 'approved');
+
+  function toggleTopicSelection(id: string) {
+    setSelectedTopicIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAllTopics() {
+    if (selectedTopicIds.size === approvedTopics.length) {
+      setSelectedTopicIds(new Set());
+    } else {
+      setSelectedTopicIds(new Set(approvedTopics.map((t) => t.id)));
+    }
+  }
 
   async function generate(topicId: string) {
     setGenerating(topicId);
@@ -43,6 +68,34 @@ export default function ContentPage() {
       toast((e as Error).message, 'error');
     }
     setGenerating(null);
+  }
+
+  async function generateAll() {
+    const ids = Array.from(selectedTopicIds);
+    if (ids.length === 0) return;
+    try {
+      const res = await fetch('/api/content/generate-batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topicIds: ids, blogConfigId: selectedConfigId || undefined }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
+      const { jobId } = await res.json();
+      setBatchJobId(jobId);
+      setSelectedTopicIds(new Set());
+      toast('Batch generation started', 'info');
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    }
+  }
+
+  function handleBatchComplete() {
+    loadData();
+  }
+
+  function handleRetryFailed(failedTopicIds: string[]) {
+    setSelectedTopicIds(new Set(failedTopicIds));
+    setBatchJobId(null);
   }
 
   async function saveDraft() {
@@ -63,9 +116,30 @@ export default function ContentPage() {
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Content Generation</h2>
 
+      {batchJobId && (
+        <Card>
+          <h3 className="font-semibold mb-3">Batch Progress</h3>
+          <BatchProgress
+            jobId={batchJobId}
+            onComplete={handleBatchComplete}
+            onRetryFailed={handleRetryFailed}
+          />
+        </Card>
+      )}
+
       {approvedTopics.length > 0 && (
         <Card>
-          <h3 className="font-semibold mb-3">Approved Topics</h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold">Approved Topics</h3>
+            <div className="flex gap-2">
+              <Button variant="secondary" onClick={toggleAllTopics}>
+                {selectedTopicIds.size === approvedTopics.length ? 'Deselect All' : 'Select All'}
+              </Button>
+              <Button onClick={generateAll} disabled={selectedTopicIds.size === 0}>
+                Generate All ({selectedTopicIds.size})
+              </Button>
+            </div>
+          </div>
           {blogConfigs.length > 0 && (
             <div className="mb-4">
               <label className="block text-sm font-medium mb-1">Blog Config (for AI context)</label>
@@ -82,9 +156,36 @@ export default function ContentPage() {
             </div>
           )}
           {approvedTopics.map((t) => (
-            <div key={t.id} className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 py-2">
-              <p className="font-medium">{t.title}</p>
-              <Button onClick={() => generate(t.id)} loading={generating === t.id}>Generate</Button>
+            <div key={t.id} className="border-b border-zinc-100 dark:border-zinc-800 py-2">
+              {editingTopic === t.id ? (
+                <TopicEditor
+                  topic={t}
+                  onSave={(updated) => {
+                    setTopics((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+                    setEditingTopic(null);
+                    toast('Topic updated', 'success');
+                  }}
+                  onCancel={() => setEditingTopic(null)}
+                />
+              ) : (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedTopicIds.has(t.id)}
+                      onChange={() => toggleTopicSelection(t.id)}
+                    />
+                    <div
+                      className="cursor-pointer hover:text-blue-600"
+                      onClick={() => setEditingTopic(t.id)}
+                    >
+                      <p className="font-medium">{t.title}</p>
+                      <p className="text-xs text-zinc-500">Click to edit</p>
+                    </div>
+                  </div>
+                  <Button onClick={() => generate(t.id)} loading={generating === t.id}>Generate</Button>
+                </div>
+              )}
             </div>
           ))}
         </Card>

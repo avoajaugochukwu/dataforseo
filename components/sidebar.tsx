@@ -7,6 +7,7 @@ const links = [
   { href: '/settings', label: 'Settings' },
   { href: '/keywords', label: 'Keywords' },
   { href: '/topics', label: 'Topics' },
+  { href: '/topical-maps', label: 'Topical Maps' },
   { href: '/content', label: 'Content' },
   { href: '/publish', label: 'Publish' },
   { href: '/help', label: 'Help' },
