@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import type { WebsiteContext } from './types';
+import type { WebsiteContext, TopicalMapContext } from './types';
 
 function buildContextBlock(ctx?: WebsiteContext): string {
   if (!ctx) return '';
@@ -62,7 +62,53 @@ Respond with a JSON array only, no other text. Example:
   return JSON.parse(jsonMatch[0]);
 }
 
-export async function generateContent(title: string, outline: string[], contentPrompt: string, websiteContext?: WebsiteContext): Promise<{
+function buildInternalLinkingBlock(
+  role?: 'pillar' | 'cluster',
+  topicalMapContext?: TopicalMapContext,
+  currentTopicId?: string
+): string {
+  if (!role || !topicalMapContext) return '';
+
+  const { pillar, clusters, baseUrl } = topicalMapContext;
+
+  if (role === 'pillar') {
+    const clusterLinks = clusters
+      .map((c) => `- [${c.title}](${baseUrl}/${c.slug})`)
+      .join('\n');
+    return `\n\nINTERNAL LINKING INSTRUCTIONS (IMPORTANT):
+You are writing the PILLAR article for this topical map. This is the main, comprehensive article.
+Link to these cluster articles naturally within your content. Include 3-5 of these links where they fit contextually:
+${clusterLinks}
+Use the exact URLs provided. Weave them in as natural inline links within relevant paragraphs — do NOT list them at the end.\n`;
+  }
+
+  // Cluster role
+  const pillarLink = `[${pillar.title}](${baseUrl}/${pillar.slug})`;
+  const siblings = clusters
+    .filter((c) => c.id !== currentTopicId)
+    .map((c) => `- [${c.title}](${baseUrl}/${c.slug})`);
+  const siblingBlock = siblings.length > 0
+    ? `\nOPTIONAL: You may also link to 1-2 of these related articles if contextually relevant:\n${siblings.join('\n')}`
+    : '';
+
+  return `\n\nINTERNAL LINKING INSTRUCTIONS (IMPORTANT):
+You are writing a CLUSTER article that supports the pillar article.
+REQUIRED: Include at least one link back to the pillar article: ${pillarLink}
+${siblingBlock}
+Use the exact URLs provided. Weave them in as natural inline links — do NOT list them at the end.\n`;
+}
+
+export async function generateContent(
+  title: string,
+  outline: string[],
+  contentPrompt: string,
+  websiteContext?: WebsiteContext,
+  options?: {
+    role?: 'pillar' | 'cluster';
+    topicalMapContext?: TopicalMapContext;
+    currentTopicId?: string;
+  }
+): Promise<{
   content: string;
   metaTitle: string;
   metaDescription: string;
@@ -70,6 +116,11 @@ export async function generateContent(title: string, outline: string[], contentP
 }> {
   const client = getClient();
   const contextBlock = buildContextBlock(websiteContext);
+  const linkingBlock = buildInternalLinkingBlock(
+    options?.role,
+    options?.topicalMapContext,
+    options?.currentTopicId
+  );
 
   const msg = await client.messages.create({
     model: 'claude-sonnet-4-20250514',
@@ -77,7 +128,7 @@ export async function generateContent(title: string, outline: string[], contentP
     messages: [
       {
         role: 'user',
-        content: `Today's date is ${getCurrentDate()}. All references to dates, years, and timeframes must reflect this.${contextBlock}
+        content: `Today's date is ${getCurrentDate()}. All references to dates, years, and timeframes must reflect this.${contextBlock}${linkingBlock}
 
 Write a comprehensive, SEO-optimized blog post in Markdown.
 

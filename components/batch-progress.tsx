@@ -51,6 +51,12 @@ export function BatchProgress({ jobId, onComplete, onRetryFailed }: BatchProgres
         <span>
           {job.completed}/{job.total} generated
           {job.failed > 0 && <span className="text-red-500 ml-2">{job.failed} failed</span>}
+          {(job.publishedCount != null && job.publishedCount > 0) && (
+            <span className="text-green-600 ml-2">{job.publishedCount} published</span>
+          )}
+          {(job.publishErrors && job.publishErrors.length > 0) && (
+            <span className="text-red-500 ml-2">{job.publishErrors.length} publish failed</span>
+          )}
         </span>
         <span className="text-zinc-500">{job.status}</span>
       </div>
@@ -72,7 +78,16 @@ export function BatchProgress({ jobId, onComplete, onRetryFailed }: BatchProgres
       </div>
       {job.errors.length > 0 && (
         <div className="text-xs text-red-500 space-y-1 mt-2">
+          <p className="font-medium">Generation errors:</p>
           {job.errors.map((e, i) => (
+            <div key={i}>Topic {e.topicId.slice(0, 8)}...: {e.error}</div>
+          ))}
+        </div>
+      )}
+      {job.publishErrors && job.publishErrors.length > 0 && (
+        <div className="text-xs text-red-500 space-y-1 mt-2">
+          <p className="font-medium">Publish errors:</p>
+          {job.publishErrors.map((e, i) => (
             <div key={i}>Topic {e.topicId.slice(0, 8)}...: {e.error}</div>
           ))}
         </div>

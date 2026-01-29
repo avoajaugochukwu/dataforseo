@@ -73,6 +73,7 @@ export default function SettingsPage() {
           <div className="mt-4 space-y-3 border-t border-zinc-200 dark:border-zinc-700 pt-4">
             <Input label="Name" value={editConfig.name || ''} onChange={(e) => setEditConfig({ ...editConfig, name: e.target.value })} />
             <Input label="Payload URL" value={editConfig.payloadUrl || ''} onChange={(e) => setEditConfig({ ...editConfig, payloadUrl: e.target.value })} />
+            <Input label="Blog URL" placeholder="https://example.com/blog" value={editConfig.blogUrl || ''} onChange={(e) => setEditConfig({ ...editConfig, blogUrl: e.target.value })} />
             <Input label="API Key" type="password" value={editConfig.apiKey || ''} onChange={(e) => setEditConfig({ ...editConfig, apiKey: e.target.value })} />
             <Input label="Collection Slug" value={editConfig.collectionSlug || ''} onChange={(e) => setEditConfig({ ...editConfig, collectionSlug: e.target.value })} />
             <Input label="Extra Field Mapping (JSON) — title, slug, content, excerpt, author, status, publishDate are automatic" value={JSON.stringify(editConfig.fieldMapping || {})} onChange={(e) => { try { setEditConfig({ ...editConfig, fieldMapping: JSON.parse(e.target.value) }); } catch {} }} />

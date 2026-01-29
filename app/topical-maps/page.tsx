@@ -28,6 +28,7 @@ export default function TopicalMapsPage() {
   const [batchJobId, setBatchJobId] = useState<string | null>(null);
   const [blogConfigs, setBlogConfigs] = useState<BlogConfig[]>([]);
   const [selectedConfigId, setSelectedConfigId] = useState<string>('');
+  const [autoPublish, setAutoPublish] = useState(true);
 
   const loadMaps = useCallback(() => {
     fetch('/api/topical-maps').then((r) => r.json()).then(setMaps);
@@ -121,7 +122,11 @@ export default function TopicalMapsPage() {
       const res = await fetch('/api/content/generate-batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topicIds: allTopics.map((t) => t.id), blogConfigId: selectedConfigId || undefined }),
+        body: JSON.stringify({
+          topicIds: allTopics.map((t) => t.id),
+          blogConfigId: selectedConfigId || undefined,
+          autoPublish: autoPublish && !!selectedConfigId,
+        }),
       });
       if (!res.ok) throw new Error((await res.json()).error);
       const { jobId } = await res.json();
@@ -236,7 +241,19 @@ export default function TopicalMapsPage() {
                   <Button variant="secondary" onClick={() => approveAll(m.id)}>Approve All</Button>
                 )}
                 {m.status === 'approved' && expandedMapId === m.id && (
-                  <Button onClick={() => generateAllContent(m.id)}>Generate All Content</Button>
+                  <div className="flex items-center gap-2">
+                    <label className="flex items-center gap-1.5 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={autoPublish}
+                        onChange={(e) => setAutoPublish(e.target.checked)}
+                        disabled={!selectedConfigId}
+                        className="rounded"
+                      />
+                      Auto-publish
+                    </label>
+                    <Button onClick={() => generateAllContent(m.id)}>Generate All Content</Button>
+                  </div>
                 )}
                 <Button variant="danger" onClick={() => deleteMap(m.id)}>Delete</Button>
               </div>

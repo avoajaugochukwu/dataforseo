@@ -4,6 +4,7 @@ export interface BlogConfig {
   payloadUrl: string;
   apiKey: string;
   collectionSlug: string;
+  blogUrl?: string;
   fieldMapping: Record<string, string>; // local field -> payload field
   defaultValues: Record<string, unknown>;
   websiteContext?: WebsiteContext;
@@ -66,6 +67,12 @@ export interface TopicalMap {
   createdAt: string;
 }
 
+export interface TopicalMapContext {
+  pillar: { id: string; title: string; slug: string };
+  clusters: { id: string; title: string; slug: string }[];
+  baseUrl: string;
+}
+
 export interface BatchJob {
   id: string;
   topicIds: string[];
@@ -74,6 +81,10 @@ export interface BatchJob {
   total: number;
   status: 'running' | 'completed' | 'cancelled';
   errors: { topicId: string; error: string }[];
+  blogConfigId?: string;
+  autoPublish?: boolean;
+  publishedCount?: number;
+  publishErrors?: { topicId: string; error: string }[];
 }
 
 export interface DbSchema {
