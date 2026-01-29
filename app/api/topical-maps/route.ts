@@ -68,6 +68,8 @@ export async function POST(req: Request) {
       createdAt: now,
     };
 
+    if (!db.data.topicalMaps) db.data.topicalMaps = [];
+    if (!db.data.topics) db.data.topics = [];
     db.data.topicalMaps.push(map);
     db.data.topics.push(pillarTopic, ...clusterTopics);
     await db.write();
