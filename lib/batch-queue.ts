@@ -91,7 +91,7 @@ async function processJob(jobId: string, blogConfigId?: string) {
           metaTitle,
           metaDescription,
           excerpt,
-          status: 'draft' as const,
+          status: topic.topicalMapId ? ('published' as const) : ('draft' as const),
           createdAt: now,
           updatedAt: now,
         };

@@ -163,18 +163,6 @@ export default function TopicalMapsPage() {
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Topical Maps</h2>
 
-      {batchJobId && (
-        <Card>
-          <h3 className="font-semibold mb-3">Batch Progress</h3>
-          <BatchProgress
-            jobId={batchJobId}
-            onComplete={() => {
-              if (expandedMapId) expandMap(expandedMapId);
-            }}
-          />
-        </Card>
-      )}
-
       <Card>
         <h3 className="font-semibold mb-3">Create Topical Map</h3>
         <div className="space-y-3">
@@ -321,6 +309,18 @@ export default function TopicalMapsPage() {
           </div>
         ))}
       </Card>
+
+      {batchJobId && (
+        <Card>
+          <h3 className="font-semibold mb-3">Batch Progress</h3>
+          <BatchProgress
+            jobId={batchJobId}
+            onComplete={() => {
+              if (expandedMapId) expandMap(expandedMapId);
+            }}
+          />
+        </Card>
+      )}
     </div>
   );
 }
