@@ -88,7 +88,7 @@ export function BatchProgress({ jobId, onComplete, onRetryFailed }: BatchProgres
         <div className="text-xs text-red-500 space-y-1 mt-2">
           <p className="font-medium">Publish errors:</p>
           {job.publishErrors.map((e, i) => (
-            <div key={i}>Topic {e.topicId.slice(0, 8)}...: {e.error}</div>
+            <div key={i} className="whitespace-pre-wrap">Topic {e.topicId.slice(0, 8)}...: {e.error}</div>
           ))}
         </div>
       )}

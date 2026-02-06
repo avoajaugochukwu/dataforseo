@@ -59,8 +59,15 @@ export async function publishToPayload(draft: DraftPost, config: BlogConfig): Pr
 
   const url = `${config.payloadUrl}/api/${config.collectionSlug}`;
 
+  const contentPreview = typeof body.content === 'string'
+    ? body.content.slice(0, 20)
+    : JSON.stringify(body.content).slice(0, 20);
+  console.log(`[payload] POST ${url}`);
+  console.log(`[payload] title: ${body.title}, content preview: ${contentPreview}...`);
+
+  const debugBody = { ...body, content: contentPreview + '...' };
   debug.push(`[payload] POST ${url}`);
-  debug.push(`[payload] body: ${JSON.stringify(body, null, 2)}`);
+  debug.push(`[payload] body: ${JSON.stringify(debugBody, null, 2)}`);
 
   const res = await fetch(url, {
     method: 'POST',
@@ -92,7 +99,20 @@ export async function publishToPayload(draft: DraftPost, config: BlogConfig): Pr
     } catch {
       // use raw text
     }
-    const err = new Error(`Payload CMS error ${res.status}:\n${detail}`);
+
+    if (!detail || !detail.trim()) {
+      const statusMessages: Record<number, string> = {
+        400: 'Bad Request - check your payload fields',
+        401: 'Unauthorized - check your API key',
+        403: 'Forbidden - your API key may lack permissions',
+        404: 'Not Found - check collection slug and API URL',
+        405: 'Method Not Allowed - check collection slug and API URL',
+        500: 'Internal Server Error on the Payload instance',
+      };
+      detail = statusMessages[res.status] ?? `HTTP ${res.status}`;
+    }
+
+    const err = new Error(`Payload CMS error ${res.status}: ${detail}\nURL: POST ${url}`);
     (err as Error & { debug: string[] }).debug = debug;
     throw err;
   }
